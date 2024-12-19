@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import traceback
 import sys
+import os
 
 def fetch_and_parse_website():
     url = "http://epg.51zmt.top:8000/sctvmulticast.html"
@@ -11,11 +12,15 @@ def fetch_and_parse_website():
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        response = requests.get(url, headers=headers, timeout=30)  # 增加超时时间
+        response = requests.get(url, headers=headers, timeout=10)  # 缩短超时时间
         
         # 检查响应状态
         print(f"响应状态码: {response.status_code}")
-        print(f"响应编码: {response.encoding}")
+        
+        # 检查响应状态码
+        if response.status_code != 200:
+            print(f"网站访问失败，状态码：{response.status_code}")
+            return False
         
         # 使用网页声明的 UTF-8 编码
         response.encoding = 'utf-8'
@@ -66,10 +71,27 @@ def fetch_and_parse_website():
         print(f"成功生成 M3U8 文件，共 {len(m3u8_lines)//2 - 1} 个频道")
         return True
     
+    except requests.RequestException as e:
+        print(f"网络请求错误: {e}")
+        return False
     except Exception as e:
         print("处理网页时发生错误:")
         print(traceback.format_exc())
         return False
 
-# 设置返回码
-sys.exit(0 if fetch_and_parse_website() else 1)
+def main():
+    # 尝试获取新的频道列表
+    if fetch_and_parse_website():
+        sys.exit(0)
+    
+    # 如果获取失败，检查是否已存在 iptv2.m3u8
+    if os.path.exists('iptv2.m3u8'):
+        print("使用上一次的频道列表")
+        sys.exit(0)
+    
+    # 如果没有任何可用的频道列表
+    print("无法获取频道列表")
+    sys.exit(1)
+
+if __name__ == "__main__":
+    main()
