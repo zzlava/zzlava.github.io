@@ -23,27 +23,45 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests beautifulsoup4
         
-    - name: Show working directory
+    - name: Show working directory and environment
       run: |
         pwd
         ls -la
+        echo "Python version:"
+        python --version
+        echo "Pip packages:"
+        pip list
         
     - name: Run update script
       run: python .github/workflows/update_iptv.py
         
     - name: Check file status
       run: |
+        echo "Current directory contents:"
+        ls -la
+        echo "iptv2.m3u8 status:"
         ls -la iptv2.m3u8 || echo "File not found"
         if [ -f iptv2.m3u8 ]; then
           echo "File content preview:"
           head -n 5 iptv2.m3u8
+          echo "File size:"
+          stat iptv2.m3u8
         fi
         
     - name: Commit and push if changed
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add iptv2.m3u8
+        echo "Git status before add:"
         git status
+        git add iptv2.m3u8
+        echo "Git status after add:"
+        git status
+        echo "Git diff staged:"
         git diff --staged
-        git diff --quiet && git diff --staged --quiet || (git commit -m "自动更新IPTV列表" && git push)
+        if git diff --quiet && git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "自动更新IPTV列表 $(date '+%Y-%m-%d %H:%M:%S')"
+          git push
+        fi
