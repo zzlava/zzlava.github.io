@@ -26,19 +26,24 @@ jobs:
     - name: Show working directory and environment
       run: |
         pwd
+        echo "Repository root contents:"
         ls -la
-        echo "Python version:"
-        python --version
-        echo "Pip packages:"
-        pip list
+        echo "Current working directory structure:"
+        find . -type f -name "*.m3u8" -o -name "*.py"
         
     - name: Run update script
-      run: python .github/workflows/update_iptv.py
+      run: |
+        # 确保我们在正确的目录
+        cd $GITHUB_WORKSPACE
+        python .github/workflows/update_iptv.py
+      timeout-minutes: 5
         
     - name: Check file status
       run: |
         echo "Current directory contents:"
         ls -la
+        echo "Looking for m3u8 files:"
+        find . -name "*.m3u8"
         echo "iptv2.m3u8 status:"
         ls -la iptv2.m3u8 || echo "File not found"
         if [ -f iptv2.m3u8 ]; then
@@ -46,6 +51,8 @@ jobs:
           head -n 5 iptv2.m3u8
           echo "File size:"
           stat iptv2.m3u8
+          echo "File absolute path:"
+          realpath iptv2.m3u8
         fi
         
     - name: Commit and push if changed
